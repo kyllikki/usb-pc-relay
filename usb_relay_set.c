@@ -26,6 +26,8 @@ int main(int argc, char **argv)
     char *dev_filename; /* device node file name */
     int dev_fd; /* device node file descriptor */
     uint8_t set_value = 0;
+    uint8_t set_idx = 0;
+    unsigned int optval;
     struct hiddev_devinfo device_info; /* device information */
     struct hiddev_report_info report_info; /* report information */
     struct hiddev_usage_ref usage; /* report data */
@@ -35,7 +37,7 @@ int main(int argc, char **argv)
     dev_filename = strdup("/dev/usb/hiddev0");
 
     /* command line args */
-    while ((opt = getopt(argc, argv, "d:v:")) != -1) {
+    while ((opt = getopt(argc, argv, "d:v:i:")) != -1) {
         switch (opt) {
         case 'd':
             free(dev_filename);
@@ -43,7 +45,21 @@ int main(int argc, char **argv)
             break;
 
         case 'v':
-            set_value = atoi(optarg);
+            optval = atoi(optarg);
+            if ((optval) > 255) {
+                fprintf(stderr, "Value %d must be between 0 and 255\n", optval);
+                exit(EXIT_FAILURE);
+            }
+            set_value = optval;
+            break;
+
+        case 'i':
+            optval = atoi(optarg);
+            if ((optval) > 7) {
+                fprintf(stderr, "Index %d must be between 0 and 7\n", optval);
+                exit(EXIT_FAILURE);
+            }
+            set_idx = optval;
             break;
 
         default: /* '?' */
@@ -97,7 +113,7 @@ int main(int argc, char **argv)
     usage.report_type = report_info.report_type;
     usage.report_id = report_info.report_id;
     usage.field_index = 0;
-    usage.usage_index = 0;
+    usage.usage_index = set_idx;
     usage.value = set_value;
 
     if (ioctl(dev_fd,HIDIOCGUCODE , &usage) < 0) {
